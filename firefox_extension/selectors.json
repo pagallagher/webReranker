@@ -1,0 +1,29 @@
+{
+  "google": {
+    "platform": "google",
+    "primaryArticle": "div.MjjYud",
+    "altArticle": "div.g",
+    "title": "h3",
+    "link": "a[href]",
+    "snippet": ".VwiC3b, div.kb0PBd.A9Y9g span, div.kb0PBd.A9Y9g",
+    "adHrefContains": ["google.com/aclk"]
+  },
+  "duckduckgo": {
+    "platform": "duckduckgo",
+    "primaryArticle": "article[data-nrn='result']",
+    "altArticle": "article[data-testid='result']",
+    "title": "h2",
+    "link": "a[href]",
+    "snippet": "[data-result='snippet']",
+    "adHrefContains": ["duckduckgo.com/y.js", "/y.js"]
+  },
+  "linkedin": {
+    "platform": "linkedin",
+    "primaryArticle": "[data-view-name='feed-full-update']",
+    "altArticle": "div.feed-shared-update-v2",
+    "title": ".feed-shared-actor__title, .update-components-actor__title, span[dir='ltr']",
+    "link": "a[href*='/posts/']",
+    "snippet": ".feed-shared-update-v2__description, .feed-shared-text, .break-words",
+    "adHrefContains": ["linkedin.com/sales", "sponsored"]
+  }
+}

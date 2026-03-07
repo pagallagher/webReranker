@@ -1,0 +1,20 @@
+__pycache__/
+# Temporary files
+*.bak
+*.swp
+.tmp/
+sample_pages/
+
+# Feedback and Data
+feedback_logs/
+*.jsonl
+feedback_stats.json
+
+# Logs
+*.log
+logs/
+
+.env/
+
+# Configuration (may contain sensitive prompts/API keys)
+config.yaml
