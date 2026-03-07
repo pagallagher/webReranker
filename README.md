@@ -65,11 +65,12 @@ The Firefox extension automatically detects and reorders search results on web p
 
 - **Extraction**: The extension runs on every page load and uses centralized selectors from `firefox_extension/selectors.json` to extract search results directly from the DOM
 - **Detection**: Heuristics detect if the current page is a search results page
-- **Selector Fetching**: The background script attempts to fetch the latest selectors from the local server; falls back to bundled selectors if the server is unavailable
+- **Selector Loading**: The extension loads bundled selectors from `firefox_extension/selectors.json` locally
 - **Result Submission**: Extracted results (title, URL, snippet, ad flags) are POSTed to `/submit_results` for logging
 - **Reordering**: The server reorders results using Ollama AI and returns them to the extension
 - **DOM Update**: The extension reorders the DOM elements on the page to reflect the new ranking
 - **Feedback**: Thumbs up/down buttons allow explicit user feedback on result quality
+- **Hide-Low Safety**: In `hide_low` mode, if no results meet the minimum score threshold, the highest-scored result is still kept so at least one result is shown
 
 #### User Feedback
 
@@ -203,13 +204,13 @@ The server runs on port 8000 by default. You can change this in `server.py`.
 
 ### Project Structure
 
-- `server.py`: FastAPI server with endpoints for selector serving, result submission, reordering, and feedback logging
+- `server.py`: FastAPI server with endpoints for result submission, reordering, feedback logging, and embedding refresh
 - `analyze_feedback.py`: Script to analyze user feedback logs
 - `web_parser.py`: Core reordering and AI logic (Ollama integration)
 - `firefox_extension/`: Firefox extension files
   - `manifest.json`: Extension manifest (v2)
   - `content.js`: Content script for page analysis, result extraction, and DOM manipulation
-  - `background.js`: Background script that proxies selector requests to avoid CORS issues
+  - `background.js`: Background script that forwards feedback submissions to the local server
   - `selectors.json`: Centralized CSS selectors for all supported search engines
 - `feedback_logs/`: Directory containing user feedback and submitted results logs (created automatically)
 - `pyproject.toml`: Python project configuration

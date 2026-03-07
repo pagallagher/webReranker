@@ -27,6 +27,7 @@ Click the extension toolbar button to open the popup and choose mode:
 - `Hide low-ranked results` (keeps top 50%)
 
 The selected mode is persisted in extension storage and applied immediately on supported pages.
+In `Hide low-ranked results` mode, if no result meets the score threshold, the extension keeps the highest-scored result so at least one result remains visible.
 
 ## How it works
 
