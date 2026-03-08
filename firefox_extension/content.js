@@ -1,7 +1,5 @@
 // content.js
 
-console.log('[content.js] Script loaded on page:', window.location.href);
-
 // Global flags to prevent infinite loops and track processed elements
 let isProcessing = false;
 let processedElements = new WeakSet();
@@ -12,6 +10,31 @@ const RERANK_MODE_REORDER = 'reorder';
 const RERANK_MODE_HIDE_LOW = 'hide_low';
 const HIDE_KEEP_TOP_RATIO = 0.5; // Keep top 50% in hide mode
 let rerankMode = RERANK_MODE_REORDER;
+const STATUS_KEY = 'webreranker_status';
+
+async function setExtensionStatus(statusText, state) {
+    const status = {
+        text: statusText,
+        state: state || 'info',
+        url: window.location.href,
+        timestamp: new Date().toISOString()
+    };
+
+    try {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.set({ [STATUS_KEY]: status }, () => {});
+            return;
+        }
+    } catch (e) {
+        console.warn('[setExtensionStatus] Failed to write status to chrome.storage', e);
+    }
+
+    try {
+        localStorage.setItem(STATUS_KEY, JSON.stringify(status));
+    } catch (e) {
+        // ignore fallback storage failures
+    }
+}
 
 function ensureFeedbackStyles() {
     if (feedbackStylesInjected) return;
@@ -103,7 +126,7 @@ async function loadRerankMode() {
     } else {
         rerankMode = RERANK_MODE_REORDER;
     }
-    console.log('[loadRerankMode] Current mode:', rerankMode);
+    //console.log('[loadRerankMode] Current mode:', rerankMode);
 }
 
 async function saveRerankMode(mode) {
@@ -112,7 +135,7 @@ async function saveRerankMode(mode) {
 }
 
 async function reprocessAllVisibleResults() {
-    console.log('[reprocessAllVisibleResults] Reprocessing in mode:', rerankMode);
+    //console.log('[reprocessAllVisibleResults] Reprocessing in mode:', rerankMode);
     processedElements = new WeakSet();
     await processResults(currentSelectors, true);
 }
@@ -139,7 +162,7 @@ function isSearchResultsPage() {
     // Heuristic 1: Count total links
     const links = document.querySelectorAll('a');
     const hasManyLinks = links.length > 50;
-    console.log(`[isSearchResultsPage] hasManyLinks (${links.length} > 50): ${hasManyLinks}`);
+    //console.log(`[isSearchResultsPage] hasManyLinks (${links.length} > 50): ${hasManyLinks}`);
 
     // Heuristic 2: Check for lists with many items
     const lists = document.querySelectorAll('ul, ol');
@@ -150,45 +173,45 @@ function isSearchResultsPage() {
             break;
         }
     }
-    console.log(`[isSearchResultsPage] hasLargeList: ${hasLargeList}`);
+    //console.log(`[isSearchResultsPage] hasLargeList: ${hasLargeList}`);
 
     // Heuristic 3: Look for divs with classes indicating results or items
     const resultDivs = document.querySelectorAll('div[class*="result"], div[class*="search"], div[class*="item"], div[class*="listing"]');
     const hasResultDivs = resultDivs.length > 3;
-    console.log(`[isSearchResultsPage] hasResultDivs (${resultDivs.length} > 3): ${hasResultDivs}`);
+    //console.log(`[isSearchResultsPage] hasResultDivs (${resultDivs.length} > 3): ${hasResultDivs}`);
 
     // Heuristic 4: Check for repeated similar elements (e.g., multiple h3 or h2)
     const h3Links = document.querySelectorAll('h3');
     const h2Links = document.querySelectorAll('h2');
     const hasManyHeadings = h3Links.length > 5 || h2Links.length > 5;
-    console.log(`[isSearchResultsPage] hasManyHeadings (h3:${h3Links.length}, h2:${h2Links.length}): ${hasManyHeadings}`);
+    //console.log(`[isSearchResultsPage] hasManyHeadings (h3:${h3Links.length}, h2:${h2Links.length}): ${hasManyHeadings}`);
 
     // Heuristic 5: Check for pagination or 'next' links
     const nextLinks = Array.from(links).filter(a => a.textContent.toLowerCase().includes('next'));
     const hasPagination = nextLinks.length > 0 || document.querySelector('nav') !== null;
-    console.log(`[isSearchResultsPage] hasPagination (nextLinks:${nextLinks.length}): ${hasPagination}`);
+    //console.log(`[isSearchResultsPage] hasPagination (nextLinks:${nextLinks.length}): ${hasPagination}`);
 
     // Heuristic 6: Check for DuckDuckGo article elements
     const duckDuckGoArticles = document.querySelectorAll('article[data-nrn="result"], article[data-testid="result"]');
     const hasDuckDuckGoResults = duckDuckGoArticles.length > 3;
-    console.log(`[isSearchResultsPage] hasDuckDuckGoResults (${duckDuckGoArticles.length} > 3): ${hasDuckDuckGoResults}`);
+    //console.log(`[isSearchResultsPage] hasDuckDuckGoResults (${duckDuckGoArticles.length} > 3): ${hasDuckDuckGoResults}`);
 
     // Heuristic 7: Check title or meta description for keywords
     const title = document.title.toLowerCase();
     const hasSearchTitle = ['search', 'results', 'find', 'duckduckgo'].some(keyword => title.includes(keyword));
-    console.log(`[isSearchResultsPage] hasSearchTitle: ${hasSearchTitle}, title: "${title}"`);
+    //console.log(`[isSearchResultsPage] hasSearchTitle: ${hasSearchTitle}, title: "${title}"`);
 
     const metaDesc = document.querySelector('meta[name="description"]');
     const content = metaDesc ? metaDesc.getAttribute('content').toLowerCase() : '';
     const hasSearchMeta = ['search', 'results'].some(keyword => content.includes(keyword));
-    console.log(`[isSearchResultsPage] hasSearchMeta: ${hasSearchMeta}`);
+    //console.log(`[isSearchResultsPage] hasSearchMeta: ${hasSearchMeta}`);
 
     // Combine heuristics
     const indicators = [hasLargeList, hasResultDivs, hasManyHeadings, hasPagination, hasSearchTitle, hasSearchMeta, hasDuckDuckGoResults];
     const strongIndicators = indicators.filter(Boolean).length;
 
     const result = strongIndicators >= 2 || (hasLargeList && hasManyLinks) || hasDuckDuckGoResults;
-    console.log(`[isSearchResultsPage] strongIndicators: ${strongIndicators}, RESULT: ${result}`);
+    //console.log(`[isSearchResultsPage] strongIndicators: ${strongIndicators}, RESULT: ${result}`);
     return result;
 }
 
@@ -282,11 +305,11 @@ function extractTextFromHtml(htmlString, element) {
         }
     }
     
-    console.log('[extractTextFromHtml] Extracted:', {
-        titleLength: result.title.length,
-        descriptionLength: result.description.length,
-        textBlocksFound: result.allText.length
-    });
+    //console.log('[extractTextFromHtml] Extracted:', {
+    //    titleLength: result.title.length,
+    //    descriptionLength: result.description.length,
+    //    textBlocksFound: result.allText.length
+    //});
     
     return result;
 }
@@ -337,7 +360,7 @@ function extractSearchResults() {
 
 async function reorderResults(results) {
     try {
-        console.log('[reorderResults] Sending', results.length, 'results to server for reordering in mode:', rerankMode);
+        //console.log('[reorderResults] Sending', results.length, 'results to server for reordering in mode:', rerankMode);
         const response = await fetch('http://127.0.0.1:8000/reorder', {
             method: 'POST',
             headers: {
@@ -352,16 +375,16 @@ async function reorderResults(results) {
             throw new Error('Failed to reorder: ' + response.status);
         }
         const reordered = await response.json();
-        console.log('[reorderResults] Server returned reordered results:', reordered);
+        //console.log('[reorderResults] Server returned reordered results:', reordered);
         // Map back to original elements
         const mapped = reordered.map(item => {
             return results.find(r => r.title === item.title && r.url === item.url);
         }).filter(Boolean);
-        console.log('[reorderResults] Mapped back to', mapped.length, 'original elements');
+        //console.log('[reorderResults] Mapped back to', mapped.length, 'original elements');
         return mapped;
     } catch (error) {
         console.error('[reorderResults] Error reordering results:', error);
-        console.log('[reorderResults] Returning original results (no reordering)');
+        //console.log('[reorderResults] Returning original results (no reordering)');
         return results; // Return original if error
     }
 }
@@ -370,12 +393,12 @@ async function reorderResults(results) {
 async function fetchSelectors() {
     try {
         const url = chrome.runtime.getURL('selectors.json');
-        console.log('[fetchSelectors] Fetching bundled selectors.json via', url);
+        //console.log('[fetchSelectors] Fetching bundled selectors.json via', url);
         const resp = await fetch(url);
         if (!resp.ok) throw new Error(`Failed to fetch bundled selectors.json: ${resp.status}`);
 
         const data = await resp.json();
-        console.log('[fetchSelectors] Got bundled selectors:', data);
+        //console.log('[fetchSelectors] Got bundled selectors:', data);
 
         const pageUrlFull = window.location.href || '';
         const hostname = window.location.hostname || '';
@@ -404,7 +427,7 @@ async function fetchSelectors() {
             }
         }
 
-        console.log('[fetchSelectors] Returning selectors from bundled file:', selectors);
+        //console.log('[fetchSelectors] Returning selectors from bundled file:', selectors);
         return selectors;
     } catch (e) {
         console.warn('[fetchSelectors] Failed to fetch bundled selectors.json:', e);
@@ -422,8 +445,8 @@ function extractWithSelectors(selectors) {
         articles = Array.from(document.querySelectorAll(selectors.altArticle));
     }
 
-    console.log(`[extractWithSelectors] Platform: ${selectors.platform}, Found ${articles.length} articles`);
-    console.log('[extractWithSelectors] Selectors:', selectors);
+    //console.log(`[extractWithSelectors] Platform: ${selectors.platform}, Found ${articles.length} articles`);
+    //console.log('[extractWithSelectors] Selectors:', selectors);
 
     for (let i = 0; i < articles.length; i++) {
         const article = articles[i];
@@ -460,7 +483,7 @@ function extractWithSelectors(selectors) {
             
             // Fallback to recursive text extraction if selectors fail
             if (!title || !snippet) {
-                console.log(`[Article ${i}] Selector-based extraction incomplete, using recursive extraction`);
+                //console.log(`[Article ${i}] Selector-based extraction incomplete, using recursive extraction`);
                 const extracted = extractTextFromHtml(rawHtml, article);
                 
                 if (!title) {
@@ -477,7 +500,7 @@ function extractWithSelectors(selectors) {
             
             // Skip if still no meaningful content
             if (!title && !snippet) {
-                console.log(`[Article ${i}] Skipping - no extractable content`);
+                //console.log(`[Article ${i}] Skipping - no extractable content`);
                 continue;
             }
             
@@ -490,7 +513,7 @@ function extractWithSelectors(selectors) {
                 }
             }
             
-            console.log(`[Article ${i}] Title: "${title.substring(0, 50)}...", URL: "${url}", Snippet length: ${snippet.length}, Selector: ${usedSelector || 'none'}`);
+            //console.log(`[Article ${i}] Title: "${title.substring(0, 50)}...", URL: "${url}", Snippet length: ${snippet.length}, Selector: ${usedSelector || 'none'}`);
             
             results.push({ 
                 title, 
@@ -555,7 +578,7 @@ async function sendExtractedResults(results, selectors) {
 function applyReordering(reorderedResults) {
     if (reorderedResults.length === 0) return;
     
-    console.log('[applyReordering] Reordering', reorderedResults.length, 'results in place');
+    //console.log('[applyReordering] Reordering', reorderedResults.length, 'results in place');
 
     // Create a map of original positions: element -> original DOM position
     const originalPositions = new Map();
@@ -600,7 +623,7 @@ function applyReordering(reorderedResults) {
                 // Next sibling was null or removed, append to parent
                 posInfo.parent.appendChild(newResult.element);
             }
-            console.log(`[applyReordering] Placed "${newResult.title?.substring(0, 30)}..." at position ${i}`);
+            //console.log(`[applyReordering] Placed "${newResult.title?.substring(0, 30)}..." at position ${i}`);
         } catch (e) {
             console.warn('[applyReordering] Failed to insert element at position', i, e);
         }
@@ -609,7 +632,7 @@ function applyReordering(reorderedResults) {
         try { addFeedbackButtons(newResult); } catch (e) { console.warn('[applyReordering] addFeedbackButtons failed', e); }
     }
     
-    console.log('[applyReordering] Reordering complete');
+    //console.log('[applyReordering] Reordering complete');
 }
 
 function resetHiddenState(results) {
@@ -631,7 +654,7 @@ function applyHideLowMode(reorderedResults) {
     resetHiddenState(reorderedResults);
 
     const keepCount = Math.max(1, Math.ceil(reorderedResults.length * HIDE_KEEP_TOP_RATIO));
-    console.log(`[applyHideLowMode] Keeping top ${keepCount}/${reorderedResults.length}, hiding the rest`);
+    //console.log(`[applyHideLowMode] Keeping top ${keepCount}/${reorderedResults.length}, hiding the rest`);
 
     reorderedResults.forEach((result, index) => {
         if (!result || !result.element) return;
@@ -648,7 +671,7 @@ function applyHideLowMode(reorderedResults) {
 }
 
 function addFeedbackButtons(result) {
-    console.log('[addFeedbackButtons] Adding buttons for:', result && result.title ? result.title : result.element);
+    //console.log('[addFeedbackButtons] Adding buttons for:', result && result.title ? result.title : result.element);
     if (!result || !result.element) return;
     ensureFeedbackStyles();
 
@@ -912,32 +935,32 @@ function debounce(func, wait) {
 // Process results (extracted from main for reusability)
 async function processResults(selectors, includeProcessed = false) {
     if (isProcessing) {
-        console.log('[processResults] Already processing, skipping...');
+        //console.log('[processResults] Already processing, skipping...');
         return;
     }
     
     isProcessing = true;
-    console.log('[processResults] Starting result processing');
+    //console.log('[processResults] Starting result processing');
     
     try {
         let results = [];
         if (selectors) {
-            console.log('[processResults] Extracting with selectors');
+            //console.log('[processResults] Extracting with selectors');
             results = extractWithSelectors(selectors);
-            console.log(`[processResults] Extracted ${results.length} results with selectors`);
-            try {
-                console.log('[processResults] Extracted results details:', results.map(r => ({ title: r.title, url: r.url, snippetLen: r.description ? r.description.length : 0, usedSelector: r.usedSelector })));
-            } catch (e) {
-                console.warn('[processResults] Could not stringify extracted results', e);
-            }
+            //console.log(`[processResults] Extracted ${results.length} results with selectors`);
+            //try {
+                //console.log('[processResults] Extracted results details:', results.map(r => ({ title: r.title, url: r.url, snippetLen: r.description ? r.description.length : 0, usedSelector: r.usedSelector })));
+            //} catch (e) {
+            //    console.warn('[processResults] Could not stringify extracted results', e);
+            //}
             sendExtractedResults(results, selectors);
         }
 
         // Fallback to heuristic extractor if selectors not available or no results
         if (!results || results.length === 0) {
-            console.log('[processResults] Using fallback heuristic extraction');
+            //console.log('[processResults] Using fallback heuristic extraction');
             results = extractSearchResults();
-            console.log(`[processResults] Extracted ${results.length} results with heuristics`);
+            //console.log(`[processResults] Extracted ${results.length} results with heuristics`);
         }
 
         if (results.length > 0) {
@@ -947,17 +970,17 @@ async function processResults(selectors, includeProcessed = false) {
             }
             
             if (results.length === 0) {
-                console.log('[processResults] All results already processed');
+                //console.log('[processResults] All results already processed');
                 return;
             }
             
             // Deduplicate results by DOM containment to avoid multiple controls per visual item
             const before = results.length;
             results = dedupeResultsByDom(results);
-            console.log(`[processResults] Deduped results: ${before} -> ${results.length}`);
+            //console.log(`[processResults] Deduped results: ${before} -> ${results.length}`);
             
             // Mark elements as processed and add UI controls
-            console.log(`[processResults] Processing ${results.length} new results for feedback and reordering`);
+            //console.log(`[processResults] Processing ${results.length} new results for feedback and reordering`);
             results.forEach(result => {
                 processedElements.add(result.element);
                 addFeedbackButtons(result);
@@ -967,21 +990,21 @@ async function processResults(selectors, includeProcessed = false) {
 
             // Then attempt reordering
             const reordered = await reorderResults(results);
-            console.log('[processResults] After reorderResults, got', reordered ? reordered.length : 0, 'results back');
+            //console.log('[processResults] After reorderResults, got', reordered ? reordered.length : 0, 'results back');
             if (reordered && reordered.length > 0) {
                 if (rerankMode === RERANK_MODE_HIDE_LOW) {
-                    console.log(`[processResults] Applying hide-low mode for ${reordered.length} results`);
+                    //console.log(`[processResults] Applying hide-low mode for ${reordered.length} results`);
                     applyHideLowMode(reordered);
                 } else {
-                    console.log(`[processResults] Applying reordering for ${reordered.length} results`);
+                    //console.log(`[processResults] Applying reordering for ${reordered.length} results`);
                     resetHiddenState(reordered);
                     applyReordering(reordered);
                 }
             } else {
-                console.log('[processResults] No reordered results, skipping applyReordering');
+                //console.log('[processResults] No reordered results, skipping applyReordering');
             }
         } else {
-            console.log('[processResults] No results found');
+            //console.log('[processResults] No results found');
         }
     } finally {
         isProcessing = false;
@@ -993,7 +1016,7 @@ const debouncedProcessResults = debounce(processResults, 500);
 
 // Setup MutationObserver to watch for lazy-loaded content
 function setupMutationObserver(selectors) {
-    console.log('[setupMutationObserver] Setting up observer for lazy-loaded content');
+    //console.log('[setupMutationObserver] Setting up observer for lazy-loaded content');
     
     const observer = new MutationObserver((mutations) => {
         // Check if any new result elements were added
@@ -1048,7 +1071,7 @@ function setupMutationObserver(selectors) {
         }
         
         if (hasNewResults) {
-            console.log('[setupMutationObserver] New results detected, processing...');
+            //console.log('[setupMutationObserver] New results detected, processing...');
             debouncedProcessResults(selectors);
         }
     });
@@ -1059,29 +1082,24 @@ function setupMutationObserver(selectors) {
         subtree: true
     });
     
-    console.log('[setupMutationObserver] Observer active');
+    //console.log('[setupMutationObserver] Observer active');
     return observer;
 }
 
-console.log('[content.js] Defining main function');
+//console.log('[content.js] Defining main function');
 async function main() {
     await loadRerankMode();
     setupModeChangeListener();
 
-    // Add visual debug indicator
-    const debugDiv = document.createElement('div');
-    debugDiv.id = 'webreranker-debug';
-    debugDiv.style.cssText = 'position: fixed; top: 10px; right: 10px; background: red; color: white; padding: 10px; z-index: 10000; font-family: monospace; font-size: 12px;';
-    debugDiv.textContent = 'WebReranker: Starting...';
-    document.body.appendChild(debugDiv);
+    await setExtensionStatus('Starting...', 'info');
 
-    console.log('[main] FIRST LINE - function has started');
+    //console.log('[main] FIRST LINE - function has started');
     try {
-        debugDiv.textContent = 'WebReranker: Checking if search results page...';
-        console.log('[main] Inside try block');
+        await setExtensionStatus('Checking if search results page...', 'info');
+        //console.log('[main] Inside try block');
         if (isSearchResultsPage()) {
-            debugDiv.textContent = 'WebReranker: Detected as search results page';
-            console.log('[main] Page detected as search results page');
+            await setExtensionStatus('Detected as search results page', 'ok');
+            //console.log('[main] Page detected as search results page');
             
             // Try to load selectors from server
             const selectors = await fetchSelectors();
@@ -1093,24 +1111,24 @@ async function main() {
             // Set up observer for lazy-loaded content (e.g., LinkedIn infinite scroll)
             setupMutationObserver(selectors);
             
-            debugDiv.textContent = 'WebReranker: Active (watching for new content)';
+            await setExtensionStatus('Active (watching for new content)', 'ok');
         } else {
-            debugDiv.textContent = 'WebReranker: NOT a search results page';
-            console.log('[main] Page not detected as search results page');
+            await setExtensionStatus('Not a search results page', 'idle');
+            //console.log('[main] Page not detected as search results page');
         }
     } catch (error) {
-        debugDiv.textContent = 'WebReranker: ERROR - ' + error.message;
+        await setExtensionStatus('Error: ' + error.message, 'error');
         console.error('[main] CAUGHT ERROR:', error);
         console.error('[main] Error stack:', error.stack);
     }
 }
 
 // Run on page load
-console.log('[content.js] About to call main()');
+//console.log('[content.js] About to call main()');
 const mainPromise = main();
-console.log('[content.js] main() returned:', mainPromise);
+//console.log('[content.js] main() returned:', mainPromise);
 mainPromise.then(() => {
-    console.log('[content.js] main() COMPLETED SUCCESSFULLY');
+    //console.log('[content.js] main() COMPLETED SUCCESSFULLY');
 }).catch(err => {
     console.error('[content.js] ERROR CAUGHT - Error in main():', err);
     console.error('[content.js] ERROR MESSAGE:', err.message);
