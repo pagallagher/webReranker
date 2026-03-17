@@ -18,3 +18,11 @@ logs/
 
 # Configuration (may contain sensitive prompts/API keys)
 config.yaml
+
+uv.lock
+SELECTOR_ANALYSIS.md
+analyze_feedback.py
+
+.gitignore
+
+next_version/
