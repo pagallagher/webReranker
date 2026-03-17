@@ -73,7 +73,13 @@ function ensureFeedbackStyles() {
         [data-view-name='feed-full-update'] .webreranker-feedback,
         [data-view-name='feed-full-update'] .webreranker-feedback button,
         .feed-shared-update-v2 .webreranker-feedback,
-        .feed-shared-update-v2 .webreranker-feedback button {
+        .feed-shared-update-v2 .webreranker-feedback button,
+        .occludable-update .webreranker-feedback,
+        .occludable-update .webreranker-feedback button,
+        article[data-activity-urn] .webreranker-feedback,
+        article[data-activity-urn] .webreranker-feedback button,
+        [componentkey*='FeedType_MAIN_FEED'] .webreranker-feedback,
+        [componentkey*='FeedType_MAIN_FEED'] .webreranker-feedback button {
             visibility: visible !important;
             opacity: 1;
         }
@@ -1027,11 +1033,25 @@ function setupMutationObserver(selectors) {
                 for (const node of mutation.addedNodes) {
                     if (node.nodeType === Node.ELEMENT_NODE) {
                         // Explicit LinkedIn lazy-feed detection
-                        if (node.matches && (node.matches("[data-view-name='feed-full-update']") || node.matches('.feed-shared-update-v2'))) {
+                        if (node.matches && (
+                            node.matches("[data-view-name='feed-full-update']") ||
+                            node.matches('.feed-shared-update-v2') ||
+                            node.matches('.occludable-update') ||
+                            node.matches('article[data-activity-urn]') ||
+                            node.matches("article[data-urn*='activity']") ||
+                            node.matches("[componentkey*='FeedType_MAIN_FEED']")
+                        )) {
                             hasNewResults = true;
                             break;
                         }
-                        if (node.querySelector && (node.querySelector("[data-view-name='feed-full-update']") || node.querySelector('.feed-shared-update-v2'))) {
+                        if (node.querySelector && (
+                            node.querySelector("[data-view-name='feed-full-update']") ||
+                            node.querySelector('.feed-shared-update-v2') ||
+                            node.querySelector('.occludable-update') ||
+                            node.querySelector('article[data-activity-urn]') ||
+                            node.querySelector("article[data-urn*='activity']") ||
+                            node.querySelector("[componentkey*='FeedType_MAIN_FEED']")
+                        )) {
                             hasNewResults = true;
                             break;
                         }

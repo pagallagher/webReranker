@@ -19,11 +19,11 @@
   },
   "linkedin": {
     "platform": "linkedin",
-    "primaryArticle": "[data-view-name='feed-full-update']",
-    "altArticle": "div.feed-shared-update-v2",
-    "title": ".feed-shared-actor__title, .update-components-actor__title, span[dir='ltr']",
-    "link": "a[href*='/posts/']",
-    "snippet": ".feed-shared-update-v2__description, .feed-shared-text, .break-words",
+    "primaryArticle": "[data-testid='mainFeed'] [role='listitem'][componentkey*='FeedType_MAIN_FEED']",
+    "altArticle": "[data-testid='mainFeed'] [role='listitem'][componentkey*='MAIN_FEED']",
+    "title": "a[href*='/in/'] strong, a[href*='/company/'] strong, h2 span",
+    "link": "a[href*='/feed/update/'], a[href*='/posts/'], a[href*='/activity-'], a[href*='/in/'], a[href*='/company/']",
+    "snippet": "[data-testid='expandable-text-box'], .update-components-text, .feed-shared-update-v2__description, .feed-shared-text, .break-words",
     "adHrefContains": ["linkedin.com/sales", "sponsored"]
   }
 }
